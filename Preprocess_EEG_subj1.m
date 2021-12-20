@@ -8,19 +8,41 @@
 %Omission last 7200 ms. A stimulation is expected after 3300-3700 ms. From 3700ms its an omission, the the X value is 0 ms into omission
 %3 brain regions : ctrl (somatosensory), frtl (frontal), prtl (parietal)
 %%
-load 'F_T_1_Filtered.mat'
+load '...\F_T_1_Filtered.mat'
 %%
-%Normalization (x-m)/s
-
-F_T_1_normalized = zscore(Q_T_1_filmff2);
-F_T_1_normalized = round(F_T_1_normalized,6);
+F_T_1_Raw = [Q_T_1_filmff1 Q_T_1_filmff2];
+save '...\F_T_1_Raw.mat' 'F_T_1_Raw'
+%%
+%Offset measure
+%Because of the recording material and filtering, there is a relative offset for each participant
+%Between 630-650 ms.
+%The offset has to be measured to get the proper segmentation
+%The measure will be taken using the NetStation software segmentation and the raw data
+%%
+%%Find the index of the first tag in the NS software segmented data
+%Load the software segmented data
+load '...F_T_1_Segmented.mat'
+%Find the measure at the first tag (in the softwar segmentation)
+Offset_measure_NS = Fam_Segment_001(:,100)';
+%Get the raw data
+Offset_measure_Brut = (F_T_1_Raw)';
+%Find the measure of the first tag in the raw data. Will return the index off the first tag in raw data.
+Offset_measure_Idx = find(ismember(Offset_measure_Brut,Offset_measure_NS,'rows'));
+%
+%Get the Tag time and tag idex from the relative event table
+F_T_1_event=readtable('...\F_T_1_Event.xlsx');
+F_T_1_Relative_Tag_Idx = round(F_T_1_event.Tag_time);
+F_T_1_Tag_Number = round(F_T_1_event.Tag_number);
+%Correct the relative event table by substracting the offset NS data
+Offset_measure = F_T_1_Relative_Tag_Idx(1,1) - Offset_measure_Idx(1,1)
+F_T_1_Tag_Idx = F_T_1_Relative_Tag_Idx - Offset_measure ;
+save '...\F_T_1_Event.mat' 'F_T_1_Tag_Idx' 'F_T_1_Tag_Number' 'Offset_measure'
+clear
+%%
+load ...\F_T_1_Raw.mat
+load ...F_T_1_Event.mat
 %%
 %Segmentation
-%%
-%Get the tag index and tag number
-F_T_1_event=readtable('F_T_1_Relative_event_list_2.xlsx')
-F_T_1_Tag_Idx = round(F_T_1_event.Tag_time);
-F_T_1_Tag_Number = round(F_T_1_event.Tag_number);
 %%
 % Create an index matrix for each condition
 Idx_Segment_Fam_F_T_1 = [];
@@ -36,50 +58,58 @@ Idx_Segment_Con_F_T_1 = [];
 %Store it in the index matrix
 for iteration = 1:(length(F_T_1_Tag_Number))
     if F_T_1_Tag_Number(iteration,1) == 55
-        Idx_Segment_F_T_1 = ((F_T_1_Tag_Idx(iteration,:))-3519): ((F_T_1_Tag_Idx(iteration,:))+3680)';
+        Idx_Segment_F_T_1 = ((F_T_1_Tag_Idx(iteration,:))-3499): ((F_T_1_Tag_Idx(iteration,:))+3700)';
         Idx_Segment_Omi_F_T_1 = [Idx_Segment_Omi_F_T_1; Idx_Segment_F_T_1];
     elseif F_T_1_Tag_Number(iteration,1) < 41
-        Idx_Segment_F_T_1 = ((F_T_1_Tag_Idx(iteration,:))-119): ((F_T_1_Tag_Idx(iteration,:))+880)';
+        Idx_Segment_F_T_1 = ((F_T_1_Tag_Idx(iteration,:))-99): ((F_T_1_Tag_Idx(iteration,:))+900)';
         Idx_Segment_Fam_F_T_1 = [Idx_Segment_Fam_F_T_1; Idx_Segment_F_T_1];
     elseif F_T_1_Tag_Number(iteration,1) == 51
-        Idx_Segment_F_T_1 = ((F_T_1_Tag_Idx(iteration,:))-119): ((F_T_1_Tag_Idx(iteration,:))+880)';
+        Idx_Segment_F_T_1 = ((F_T_1_Tag_Idx(iteration,:))-99): ((F_T_1_Tag_Idx(iteration,:))+900)';
         Idx_Segment_Std_F_T_1 = [Idx_Segment_Std_F_T_1; Idx_Segment_F_T_1];
     elseif F_T_1_Tag_Number(iteration,1) == 53
-        Idx_Segment_F_T_1 = ((F_T_1_Tag_Idx(iteration,:))-119): ((F_T_1_Tag_Idx(iteration,:))+880)';
+        Idx_Segment_F_T_1 = ((F_T_1_Tag_Idx(iteration,:))-99): ((F_T_1_Tag_Idx(iteration,:))+900)';
         Idx_Segment_Deviant_F_T_1 = [Idx_Segment_Deviant_F_T_1; Idx_Segment_F_T_1];
     elseif F_T_1_Tag_Number(iteration,1) == 54
-        Idx_Segment_F_T_1 = ((F_T_1_Tag_Idx(iteration,:))-119): ((F_T_1_Tag_Idx(iteration,:))+880)';
+        Idx_Segment_F_T_1 = ((F_T_1_Tag_Idx(iteration,:))-99): ((F_T_1_Tag_Idx(iteration,:))+900)';
         Idx_Segment_StimMoy_F_T_1 = [Idx_Segment_StimMoy_F_T_1; Idx_Segment_F_T_1];
     elseif F_T_1_Tag_Number(iteration,1) == 57
-        Idx_Segment_F_T_1 = ((F_T_1_Tag_Idx(iteration,:))-119): ((F_T_1_Tag_Idx(iteration,:))+880)';
+        Idx_Segment_F_T_1 = ((F_T_1_Tag_Idx(iteration,:))-99): ((F_T_1_Tag_Idx(iteration,:))+900)';
         Idx_Segment_PostOm_F_T_1 = [Idx_Segment_PostOm_F_T_1; Idx_Segment_F_T_1];
     else
-        Idx_Segment_F_T_1 = ((F_T_1_Tag_Idx(iteration,:))-119): ((F_T_1_Tag_Idx(iteration,:))+880)';
+        Idx_Segment_F_T_1 = ((F_T_1_Tag_Idx(iteration,:))-99): ((F_T_1_Tag_Idx(iteration,:))+900)';
         Idx_Segment_Con_F_T_1 = [Idx_Segment_Con_F_T_1; Idx_Segment_F_T_1];
     end
 end
 %%
+Idx_Segment_Fam_F_T_1 = Idx_Segment_Fam_F_T_1';
+Idx_Segment_Omi_F_T_1 = Idx_Segment_Omi_F_T_1';
+Idx_Segment_Std_F_T_1 = Idx_Segment_Std_F_T_1;
+Idx_Segment_Deviant_F_T_1 = Idx_Segment_Deviant_F_T_1';
+Idx_Segment_StimMoy_F_T_1 = Idx_Segment_StimMoy_F_T_1';
+Idx_Segment_PostOm_F_T_1 = Idx_Segment_PostOm_F_T_1';
+Idx_Segment_Con_F_T_1 = Idx_Segment_Con_F_T_1';
+%%
 %Get the amplitude (value) for each index.
 %Store it in a 3D matrix and reshape it to get data*electrode*segment
-Segments_Fam_F_T_1 = F_T_1_normalized(:,Idx_Segment_Fam_F_T_1);
-Segments_Fam_F_T_1 = permute(reshape(Segments_Fam_F_T_1, 1000, 40, 129), [1 3 2]);
-Segments_Omission_F_T_1 = F_T_1_normalized(:,Idx_Segment_Omi_F_T_1);
-Segments_Omission_F_T_1 = permute(reshape(Segments_Omission_F_T_1, 7200, 30, 129), [1 3 2]);
-Segments_Std_F_T_1 = F_T_1_normalized(:,Idx_Segment_Std_F_T_1);
-Segments_Std_F_T_1 = permute(reshape(Segments_Std_F_T_1, 1000, 90, 129), [1 3 2]);
-Segments_Deviant_F_T_1 = F_T_1_normalized(:,Idx_Segment_Deviant_F_T_1);
-Segments_Deviant_F_T_1 = permute(reshape(Segments_Deviant_F_T_1, 1000, 30, 129), [1 3 2]);
-Segments_StimMoy_F_T_1 = F_T_1_normalized(:,Idx_Segment_StimMoy_F_T_1);
-Segments_StimMoy_F_T_1 = permute(reshape(Segments_StimMoy_F_T_1, 1000, 30, 129), [1 3 2]);
-Segments_PostOm_F_T_1 = F_T_1_normalized(:,Idx_Segment_PostOm_F_T_1);
-Segments_PostOm_F_T_1 = permute(reshape(Segments_PostOm_F_T_1, 1000, 30, 129), [1 3 2]);
-Segments_Con_F_T_1 = F_T_1_normalized(:,Idx_Segment_Con_F_T_1);
-Segments_Con_F_T_1 = permute(reshape(Segments_Con_F_T_1, 1000, 40, 129), [1 3 2]);
+Segments_Fam_F_T_1 = F_T_1_Raw(:,Idx_Segment_Fam_F_T_1);
+Segments_Fam_F_T_1 = reshape(Segments_Fam_F_T_1, 129, 1000, 40);
+Segments_Omission_F_T_1 = F_T_1_Raw(:,Idx_Segment_Omi_F_T_1);
+Segments_Omission_F_T_1 = reshape(Segments_Omission_F_T_1, 129, 7200, 30);
+Segments_Std_F_T_1 = F_T_1_Raw(:,Idx_Segment_Std_F_T_1);
+Segments_Std_F_T_1 = reshape(Segments_Std_F_T_1, 129, 1000, 90);
+Segments_Deviant_F_T_1 = F_T_1_Raw(:,Idx_Segment_Deviant_F_T_1);
+Segments_Deviant_F_T_1 = reshape(Segments_Deviant_F_T_1, 129, 1000, 30);
+Segments_StimMoy_F_T_1 = F_T_1_Raw(:,Idx_Segment_StimMoy_F_T_1);
+Segments_StimMoy_F_T_1 = reshape(Segments_StimMoy_F_T_1, 129, 1000, 30);
+Segments_PostOm_F_T_1 = F_T_1_Raw(:,Idx_Segment_PostOm_F_T_1);
+Segments_PostOm_F_T_1 = reshape(Segments_PostOm_F_T_1, 129, 1000, 30);
+Segments_Con_F_T_1 = F_T_1_Raw(:,Idx_Segment_Con_F_T_1);
+Segments_Con_F_T_1 = reshape(Segments_Con_F_T_1, 129, 1000, 40);
 %%
-save 'F_T_1_Seg.mat' 'Segments_Con_F_T_1' 'Segments_Deviant_F_T_1' 'Segments_Fam_F_T_1' 'Segments_Omission_F_T_1' 'Segments_PostOm_F_T_1' 'Segments_Std_F_T_1' 'Segments_StimMoy_F_T_1'
+save 'F_T_1_Segmented_ML.mat' 'Segments_Con_F_T_1' 'Segments_Deviant_F_T_1' 'Segments_Fam_F_T_1' 'Segments_Omission_F_T_1' 'Segments_PostOm_F_T_1' 'Segments_Std_F_T_1' 'Segments_StimMoy_F_T_1'
 clear
 %%
-load F_T_1_Seg.mat
+load ...\F_T_1_Segmented_ML.mat
 %%
 %ARTIFACT DETECTION
 %%
@@ -252,48 +282,43 @@ PostOm_3D_F_T_1 = [];
 StimMoy_3D_F_T_1 = [];
 Omission_3D_F_T_1 = [];
 
-for i = 1:(size(Segments_Ref_Con_F_T_1,3))
-    Segment_Con_Bas_F_T_1 = Segments_Ref_Con_F_T_1(:,:,i) - mean(Segments_Ref_Con_F_T_1(1:100,:,i));
+
+for i = 1:(size(Segments_AD_Con_F_T_1,3))
+    Segment_Con_Bas_F_T_1 = Segments_AD_Con_F_T_1(:,:,i) - mean(Segments_AD_Con_F_T_1(:,1:99,i),2);
     Con_3D_F_T_1 = cat(3,Con_3D_F_T_1, Segment_Con_Bas_F_T_1);
 end
 
-for i = 1:(size(Segments_Ref_Fam_F_T_1,3))
-    Segment_Fam_Bas_F_T_1 = Segments_Ref_Fam_F_T_1(:,:,i) - mean(Segments_Ref_Fam_F_T_1(1:100,:,i));
+for i = 1:(size(Segments_AD_Fam_F_T_1,3))
+    Segment_Fam_Bas_F_T_1 = Segments_AD_Fam_F_T_1(:,:,i) - mean(Segments_AD_Fam_F_T_1(:,1:99,i),2);
     Fam_3D_F_T_1 = cat(3,Fam_3D_F_T_1, Segment_Fam_Bas_F_T_1);
 end
 
-for i = 1:(size(Segments_Ref_Deviant_F_T_1,3))
-    Segment_Deviant_Bas_F_T_1 = Segments_Ref_Deviant_F_T_1(:,:,i) - mean(Segments_Ref_Deviant_F_T_1(1:100,:,i));
+for i = 1:(size(Segments_AD_Deviant_F_T_1,3))
+    Segment_Deviant_Bas_F_T_1 = Segments_AD_Deviant_F_T_1(:,:,i) - mean(Segments_AD_Deviant_F_T_1(:,1:99,i),2);
     Deviant_3D_F_T_1 = cat(3,Deviant_3D_F_T_1, Segment_Deviant_Bas_F_T_1);
 end
 
-for i = 1:(size(Segments_Ref_Std_F_T_1,3))
-    Segment_Std_Bas_F_T_1 = Segments_Ref_Std_F_T_1(:,:,i) - mean(Segments_Ref_Std_F_T_1(1:100,:,i));
+for i = 1:(size(Segments_AD_Std_F_T_1,3))
+    Segment_Std_Bas_F_T_1 = Segments_AD_Std_F_T_1(:,:,i) - mean(Segments_AD_Std_F_T_1(:,1:99,i),2);
     Std_3D_F_T_1 = cat(3,Std_3D_F_T_1, Segment_Std_Bas_F_T_1);
 end
 
-for i = 1:(size(Segments_Ref_PostOm_F_T_1,3))
-    Segment_PostOm_Bas_F_T_1 = Segments_Ref_PostOm_F_T_1(:,:,i) - mean(Segments_Ref_PostOm_F_T_1(1:100,:,i));
+for i = 1:(size(Segments_AD_PostOm_F_T_1,3))
+    Segment_PostOm_Bas_F_T_1 = Segments_AD_PostOm_F_T_1(:,:,i) - mean(Segments_AD_PostOm_F_T_1(:,1:99,i),2);
     PostOm_3D_F_T_1 = cat(3,PostOm_3D_F_T_1, Segment_PostOm_Bas_F_T_1);
 end
 
-for i = 1:(size(Segments_Ref_StimMoy_F_T_1,3))
-    Segment_StimMoy_Bas_F_T_1 = Segments_Ref_StimMoy_F_T_1(:,:,i) - mean(Segments_Ref_StimMoy_F_T_1(1:100,:,i));
+for i = 1:(size(Segments_AD_StimMoy_F_T_1,3))
+    Segment_StimMoy_Bas_F_T_1 = Segments_AD_StimMoy_F_T_1(:,:,i) - mean(Segments_AD_StimMoy_F_T_1(:,1:99,i),2);
     StimMoy_3D_F_T_1 = cat(3,StimMoy_3D_F_T_1, Segment_StimMoy_Bas_F_T_1);
 end
 
-for i = 1:(size(Segments_Ref_Omission_F_T_1,3))
-    Segment_Omission_Bas_F_T_1 = Segments_Ref_Omission_F_T_1(:,:,i) - mean(Segments_Ref_Omission_F_T_1(1:100,:,i));
+for i = 1:(size(Segments_AD_Omission_F_T_1,3))
+    Segment_Omission_Bas_F_T_1 = Segments_AD_Omission_F_T_1(:,:,i) - mean(Segments_AD_Omission_F_T_1(:,1:99,i),2);
     Omission_3D_F_T_1 = cat(3,Omission_3D_F_T_1, Segment_Omission_Bas_F_T_1);
 end
 %%
-Con_3D_F_T_1 = permute(Con_3D_F_T_1, [2 1 3]);
-Fam_3D_F_T_1 = permute(Fam_3D_F_T_1, [2 1 3]);
-Deviant_3D_F_T_1 = permute(Deviant_3D_F_T_1, [2 1 3]);
-Std_3D_F_T_1 = permute(Std_3D_F_T_1, [2 1 3]);
-PostOm_3D_F_T_1 = permute(PostOm_3D_F_T_1, [2 1 3]);
-StimMoy_3D_F_T_1 = permute(StimMoy_3D_F_T_1, [2 1 3]);
-Omission_3D_F_T_1 = permute(Omission_3D_F_T_1, [2 1 3]);
-save '3D_data_F_T_1_2' Con_3D_F_T_1 Fam_3D_F_T_1 Deviant_3D_F_T_1 Std_3D_F_T_1 PostOm_3D_F_T_1 StimMoy_3D_F_T_1 Omission_3D_F_T_1
+Baseline_Con = mean(Segments_AD_Con_F_T_1(:,1:99,:),2)
 %%
+save '3D_data_F_T_1' Con_3D_F_T_1 Fam_3D_F_T_1 Deviant_3D_F_T_1 Std_3D_F_T_1 PostOm_3D_F_T_1 StimMoy_3D_F_T_1 Omission_3D_F_T_1
 clear
