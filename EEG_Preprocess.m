@@ -8,19 +8,41 @@
 %Omission last 7200 ms. A stimulation is expected after 3300-3700 ms. From 3700ms its an omission, the the X value is 0 ms into omission
 %3 brain regions : ctrl (somatosensory), frtl (frontal), prtl (parietal)
 %%
-load 'subjcode_Filtered.mat'
+load '...\subjcode_Filtered.mat'
 %%
-%Normalization (x-m)/s
-
-subjcode_normalized = zscore(subjcode_filmff2);
-subjcode_normalized = round(subjcode_normalized,6);
+subjcode_Raw = [subjcode_filmff1 subjcode_filmff2];
+save '...\subjcode_Raw.mat' 'subjcode_Raw'
+%%
+%Offset measure
+%Because of the recording material and filtering, there is a relative offset for each participant
+%Between 630-650 ms.
+%The offset has to be measured to get the proper segmentation
+%The measure will be taken using the NetStation software segmentation and the raw data
+%%
+%%Find the index of the first tag in the NS software segmented data
+%Load the software segmented data
+load '...subjcode_Segmented.mat'
+%Find the measure at the first tag (in the softwar segmentation)
+Offset_measure_NS = Fam_Segment_001(:,100)';
+%Get the raw data
+Offset_measure_Brut = (subjcode_Raw)';
+%Find the measure of the first tag in the raw data. Will return the index off the first tag in raw data.
+Offset_measure_Idx = find(ismember(Offset_measure_Brut,Offset_measure_NS,'rows'));
+%
+%Get the Tag time and tag idex from the relative event table
+subjcode_event=readtable('...\subjcode_Event.xlsx');
+subjcode_Relative_Tag_Idx = round(subjcode_event.Tag_time);
+subjcode_Tag_Number = round(subjcode_event.Tag_number);
+%Correct the relative event table by substracting the offset NS data
+Offset_measure = subjcode_Relative_Tag_Idx(1,1) - Offset_measure_Idx(1,1)
+subjcode_Tag_Idx = subjcode_Relative_Tag_Idx - Offset_measure ;
+save '...\subjcode_Event.mat' 'subjcode_Tag_Idx' 'subjcode_Tag_Number' 'Offset_measure'
+clear
+%%
+load ...\subjcode_Raw.mat
+load ...subjcode_Event.mat
 %%
 %Segmentation
-%%
-%Get the tag index and tag number
-subjcode_event=readtable('subjcode_Relative_event_list_2.xlsx')
-subjcode_Tag_Idx = round(subjcode_event.Tag_time);
-subjcode_Tag_Number = round(subjcode_event.Tag_number);
 %%
 % Create an index matrix for each condition
 Idx_Segment_Fam_subjcode = [];
@@ -36,50 +58,58 @@ Idx_Segment_Con_subjcode = [];
 %Store it in the index matrix
 for iteration = 1:(length(subjcode_Tag_Number))
     if subjcode_Tag_Number(iteration,1) == 55
-        Idx_Segment_subjcode = ((subjcode_Tag_Idx(iteration,:))-3519): ((subjcode_Tag_Idx(iteration,:))+3680)';
+        Idx_Segment_subjcode = ((subjcode_Tag_Idx(iteration,:))-3499): ((subjcode_Tag_Idx(iteration,:))+3700)';
         Idx_Segment_Omi_subjcode = [Idx_Segment_Omi_subjcode; Idx_Segment_subjcode];
     elseif subjcode_Tag_Number(iteration,1) < 41
-        Idx_Segment_subjcode = ((subjcode_Tag_Idx(iteration,:))-119): ((subjcode_Tag_Idx(iteration,:))+880)';
+        Idx_Segment_subjcode = ((subjcode_Tag_Idx(iteration,:))-99): ((subjcode_Tag_Idx(iteration,:))+900)';
         Idx_Segment_Fam_subjcode = [Idx_Segment_Fam_subjcode; Idx_Segment_subjcode];
     elseif subjcode_Tag_Number(iteration,1) == 51
-        Idx_Segment_subjcode = ((subjcode_Tag_Idx(iteration,:))-119): ((subjcode_Tag_Idx(iteration,:))+880)';
+        Idx_Segment_subjcode = ((subjcode_Tag_Idx(iteration,:))-99): ((subjcode_Tag_Idx(iteration,:))+900)';
         Idx_Segment_Std_subjcode = [Idx_Segment_Std_subjcode; Idx_Segment_subjcode];
     elseif subjcode_Tag_Number(iteration,1) == 53
-        Idx_Segment_subjcode = ((subjcode_Tag_Idx(iteration,:))-119): ((subjcode_Tag_Idx(iteration,:))+880)';
+        Idx_Segment_subjcode = ((subjcode_Tag_Idx(iteration,:))-99): ((subjcode_Tag_Idx(iteration,:))+900)';
         Idx_Segment_Deviant_subjcode = [Idx_Segment_Deviant_subjcode; Idx_Segment_subjcode];
     elseif subjcode_Tag_Number(iteration,1) == 54
-        Idx_Segment_subjcode = ((subjcode_Tag_Idx(iteration,:))-119): ((subjcode_Tag_Idx(iteration,:))+880)';
+        Idx_Segment_subjcode = ((subjcode_Tag_Idx(iteration,:))-99): ((subjcode_Tag_Idx(iteration,:))+900)';
         Idx_Segment_StimMoy_subjcode = [Idx_Segment_StimMoy_subjcode; Idx_Segment_subjcode];
     elseif subjcode_Tag_Number(iteration,1) == 57
-        Idx_Segment_subjcode = ((subjcode_Tag_Idx(iteration,:))-119): ((subjcode_Tag_Idx(iteration,:))+880)';
+        Idx_Segment_subjcode = ((subjcode_Tag_Idx(iteration,:))-99): ((subjcode_Tag_Idx(iteration,:))+900)';
         Idx_Segment_PostOm_subjcode = [Idx_Segment_PostOm_subjcode; Idx_Segment_subjcode];
     else
-        Idx_Segment_subjcode = ((subjcode_Tag_Idx(iteration,:))-119): ((subjcode_Tag_Idx(iteration,:))+880)';
+        Idx_Segment_subjcode = ((subjcode_Tag_Idx(iteration,:))-99): ((subjcode_Tag_Idx(iteration,:))+900)';
         Idx_Segment_Con_subjcode = [Idx_Segment_Con_subjcode; Idx_Segment_subjcode];
     end
 end
 %%
+Idx_Segment_Fam_subjcode = Idx_Segment_Fam_subjcode';
+Idx_Segment_Omi_subjcode = Idx_Segment_Omi_subjcode';
+Idx_Segment_Std_subjcode = Idx_Segment_Std_subjcode;
+Idx_Segment_Deviant_subjcode = Idx_Segment_Deviant_subjcode';
+Idx_Segment_StimMoy_subjcode = Idx_Segment_StimMoy_subjcode';
+Idx_Segment_PostOm_subjcode = Idx_Segment_PostOm_subjcode';
+Idx_Segment_Con_subjcode = Idx_Segment_Con_subjcode';
+%%
 %Get the amplitude (value) for each index.
 %Store it in a 3D matrix and reshape it to get data*electrode*segment
-Segments_Fam_subjcode = subjcode_normalized(:,Idx_Segment_Fam_subjcode);
-Segments_Fam_subjcode = permute(reshape(Segments_Fam_subjcode, 1000, 40, 129), [1 3 2]);
-Segments_Omission_subjcode = subjcode_normalized(:,Idx_Segment_Omi_subjcode);
-Segments_Omission_subjcode = permute(reshape(Segments_Omission_subjcode, 7200, 30, 129), [1 3 2]);
-Segments_Std_subjcode = subjcode_normalized(:,Idx_Segment_Std_subjcode);
-Segments_Std_subjcode = permute(reshape(Segments_Std_subjcode, 1000, 90, 129), [1 3 2]);
-Segments_Deviant_subjcode = subjcode_normalized(:,Idx_Segment_Deviant_subjcode);
-Segments_Deviant_subjcode = permute(reshape(Segments_Deviant_subjcode, 1000, 30, 129), [1 3 2]);
-Segments_StimMoy_subjcode = subjcode_normalized(:,Idx_Segment_StimMoy_subjcode);
-Segments_StimMoy_subjcode = permute(reshape(Segments_StimMoy_subjcode, 1000, 30, 129), [1 3 2]);
-Segments_PostOm_subjcode = subjcode_normalized(:,Idx_Segment_PostOm_subjcode);
-Segments_PostOm_subjcode = permute(reshape(Segments_PostOm_subjcode, 1000, 30, 129), [1 3 2]);
-Segments_Con_subjcode = subjcode_normalized(:,Idx_Segment_Con_subjcode);
-Segments_Con_subjcode = permute(reshape(Segments_Con_subjcode, 1000, 40, 129), [1 3 2]);
+Segments_Fam_subjcode = subjcode_Raw(:,Idx_Segment_Fam_subjcode);
+Segments_Fam_subjcode = reshape(Segments_Fam_subjcode, 129, 1000, 40);
+Segments_Omission_subjcode = subjcode_Raw(:,Idx_Segment_Omi_subjcode);
+Segments_Omission_subjcode = reshape(Segments_Omission_subjcode, 129, 7200, 30);
+Segments_Std_subjcode = subjcode_Raw(:,Idx_Segment_Std_subjcode);
+Segments_Std_subjcode = reshape(Segments_Std_subjcode, 129, 1000, 90);
+Segments_Deviant_subjcode = subjcode_Raw(:,Idx_Segment_Deviant_subjcode);
+Segments_Deviant_subjcode = reshape(Segments_Deviant_subjcode, 129, 1000, 30);
+Segments_StimMoy_subjcode = subjcode_Raw(:,Idx_Segment_StimMoy_subjcode);
+Segments_StimMoy_subjcode = reshape(Segments_StimMoy_subjcode, 129, 1000, 30);
+Segments_PostOm_subjcode = subjcode_Raw(:,Idx_Segment_PostOm_subjcode);
+Segments_PostOm_subjcode = reshape(Segments_PostOm_subjcode, 129, 1000, 30);
+Segments_Con_subjcode = subjcode_Raw(:,Idx_Segment_Con_subjcode);
+Segments_Con_subjcode = reshape(Segments_Con_subjcode, 129, 1000, 40);
 %%
-save 'subjcode_Seg.mat' 'Segments_Con_subjcode' 'Segments_Deviant_subjcode' 'Segments_Fam_subjcode' 'Segments_Omission_subjcode' 'Segments_PostOm_subjcode' 'Segments_Std_subjcode' 'Segments_StimMoy_subjcode'
+save 'subjcode_Segmented_ML.mat' 'Segments_Con_subjcode' 'Segments_Deviant_subjcode' 'Segments_Fam_subjcode' 'Segments_Omission_subjcode' 'Segments_PostOm_subjcode' 'Segments_Std_subjcode' 'Segments_StimMoy_subjcode'
 clear
 %%
-load subjcode_Seg.mat
+load ...\subjcode_Segmented_ML.mat
 %%
 %ARTIFACT DETECTION
 %%
@@ -252,48 +282,43 @@ PostOm_3D_subjcode = [];
 StimMoy_3D_subjcode = [];
 Omission_3D_subjcode = [];
 
-for i = 1:(size(Segments_Ref_Con_subjcode,3))
-    Segment_Con_Bas_subjcode = Segments_Ref_Con_subjcode(:,:,i) - mean(Segments_Ref_Con_subjcode(1:100,:,i));
+
+for i = 1:(size(Segments_AD_Con_subjcode,3))
+    Segment_Con_Bas_subjcode = Segments_AD_Con_subjcode(:,:,i) - mean(Segments_AD_Con_subjcode(:,1:99,i),2);
     Con_3D_subjcode = cat(3,Con_3D_subjcode, Segment_Con_Bas_subjcode);
 end
 
-for i = 1:(size(Segments_Ref_Fam_subjcode,3))
-    Segment_Fam_Bas_subjcode = Segments_Ref_Fam_subjcode(:,:,i) - mean(Segments_Ref_Fam_subjcode(1:100,:,i));
+for i = 1:(size(Segments_AD_Fam_subjcode,3))
+    Segment_Fam_Bas_subjcode = Segments_AD_Fam_subjcode(:,:,i) - mean(Segments_AD_Fam_subjcode(:,1:99,i),2);
     Fam_3D_subjcode = cat(3,Fam_3D_subjcode, Segment_Fam_Bas_subjcode);
 end
 
-for i = 1:(size(Segments_Ref_Deviant_subjcode,3))
-    Segment_Deviant_Bas_subjcode = Segments_Ref_Deviant_subjcode(:,:,i) - mean(Segments_Ref_Deviant_subjcode(1:100,:,i));
+for i = 1:(size(Segments_AD_Deviant_subjcode,3))
+    Segment_Deviant_Bas_subjcode = Segments_AD_Deviant_subjcode(:,:,i) - mean(Segments_AD_Deviant_subjcode(:,1:99,i),2);
     Deviant_3D_subjcode = cat(3,Deviant_3D_subjcode, Segment_Deviant_Bas_subjcode);
 end
 
-for i = 1:(size(Segments_Ref_Std_subjcode,3))
-    Segment_Std_Bas_subjcode = Segments_Ref_Std_subjcode(:,:,i) - mean(Segments_Ref_Std_subjcode(1:100,:,i));
+for i = 1:(size(Segments_AD_Std_subjcode,3))
+    Segment_Std_Bas_subjcode = Segments_AD_Std_subjcode(:,:,i) - mean(Segments_AD_Std_subjcode(:,1:99,i),2);
     Std_3D_subjcode = cat(3,Std_3D_subjcode, Segment_Std_Bas_subjcode);
 end
 
-for i = 1:(size(Segments_Ref_PostOm_subjcode,3))
-    Segment_PostOm_Bas_subjcode = Segments_Ref_PostOm_subjcode(:,:,i) - mean(Segments_Ref_PostOm_subjcode(1:100,:,i));
+for i = 1:(size(Segments_AD_PostOm_subjcode,3))
+    Segment_PostOm_Bas_subjcode = Segments_AD_PostOm_subjcode(:,:,i) - mean(Segments_AD_PostOm_subjcode(:,1:99,i),2);
     PostOm_3D_subjcode = cat(3,PostOm_3D_subjcode, Segment_PostOm_Bas_subjcode);
 end
 
-for i = 1:(size(Segments_Ref_StimMoy_subjcode,3))
-    Segment_StimMoy_Bas_subjcode = Segments_Ref_StimMoy_subjcode(:,:,i) - mean(Segments_Ref_StimMoy_subjcode(1:100,:,i));
+for i = 1:(size(Segments_AD_StimMoy_subjcode,3))
+    Segment_StimMoy_Bas_subjcode = Segments_AD_StimMoy_subjcode(:,:,i) - mean(Segments_AD_StimMoy_subjcode(:,1:99,i),2);
     StimMoy_3D_subjcode = cat(3,StimMoy_3D_subjcode, Segment_StimMoy_Bas_subjcode);
 end
 
-for i = 1:(size(Segments_Ref_Omission_subjcode,3))
-    Segment_Omission_Bas_subjcode = Segments_Ref_Omission_subjcode(:,:,i) - mean(Segments_Ref_Omission_subjcode(1:100,:,i));
+for i = 1:(size(Segments_AD_Omission_subjcode,3))
+    Segment_Omission_Bas_subjcode = Segments_AD_Omission_subjcode(:,:,i) - mean(Segments_AD_Omission_subjcode(:,1:99,i),2);
     Omission_3D_subjcode = cat(3,Omission_3D_subjcode, Segment_Omission_Bas_subjcode);
 end
 %%
-Con_3D_subjcode = permute(Con_3D_subjcode, [2 1 3]);
-Fam_3D_subjcode = permute(Fam_3D_subjcode, [2 1 3]);
-Deviant_3D_subjcode = permute(Deviant_3D_subjcode, [2 1 3]);
-Std_3D_subjcode = permute(Std_3D_subjcode, [2 1 3]);
-PostOm_3D_subjcode = permute(PostOm_3D_subjcode, [2 1 3]);
-StimMoy_3D_subjcode = permute(StimMoy_3D_subjcode, [2 1 3]);
-Omission_3D_subjcode = permute(Omission_3D_subjcode, [2 1 3]);
-save '3D_data_subjcode_2' Con_3D_subjcode Fam_3D_subjcode Deviant_3D_subjcode Std_3D_subjcode PostOm_3D_subjcode StimMoy_3D_subjcode Omission_3D_subjcode
+Baseline_Con = mean(Segments_AD_Con_subjcode(:,1:99,:),2)
 %%
+save '3D_data_subjcode' Con_3D_subjcode Fam_3D_subjcode Deviant_3D_subjcode Std_3D_subjcode PostOm_3D_subjcode StimMoy_3D_subjcode Omission_3D_subjcode
 clear
