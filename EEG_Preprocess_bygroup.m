@@ -1,10 +1,28 @@
-clear
+%Code : Anne-Lise Marais
+%Preprocessing (filtering and artifact rejection) : Anne-Lise Marais or Marie Anquetil or Victoria Dumont w/ Netstation EGI
+%Data acquisition : Marie Anquetil or Anne-Lise Marais or Victoria Dumont
+%Protocol : Anne-Lise Marais
+
+%This code preprocesses the data of an oddball somatosensory protocol for the DECODE research. See https://www.unicaen.fr/projet_de_recherche/decode/
+%7 conditions : Std (Standard, all standards stimulations except Fam and Con), Fam (40 first standards stimulations), Con (40 last standards stimulations), StimMoy (Standard stimulation used for comparison), Deviant, PostOm (Standard stimulation right after the omission), Omission (Absence of stimulation)
+%Omission last 7200 ms. A stimulation is expected after 3300-3700 ms. From 3700ms its an omission, the the X value is 0 ms into omission
+%2 brain regions : ctrl (somatosensory), frtl (frontal)
+%Children were stimulated either on the right(1) or left(2) arm
+%there are 5 groups preprocessed with this code : two years old, four years old typical, four years old
+%atypical, six years old typical, six years old atypical
 %%
-Folder = dir('...\sub*') %Get the folder directory
+%REPLACE subjectgroup by the name of subgroup
+
+if strlength('subjectgroup') == 12
+    disp('replace sub by the name of the group')
+    return
+end
 %%
-Table = readtable('...\ArmStimulated.xlsx'); %Get info about arm stimulated
-if length(Folder) ~= width(Table) %if there is not the same number of data and arm stimulatated
-    disp('Complete ArmStimulated.xlsx with new participants') %Complete missing info
+Folder = dir('...\subjectgroup_preprocess\subjectgroup*') %Get the folder directory
+%%
+Table = readtable('...\subjectgroup_preprocess\ArmStimulated.xlsx');
+if length(Folder) ~= width(Table)
+    disp('Complete ArmStimulated.xlsx with new participants')
     return
 end
 %%
@@ -19,10 +37,10 @@ for i = 1:length(Folder) %For as many folder in the directory
 end
 %%
 %Save raw data
-save('...\sub_Raw.mat', 'Raw_data', '-v7.3')
+save('...\subjectgroup_preprocess\Results_subjectgroup\subjectgroup_Raw.mat', 'Raw_data', '-v7.3')
 %%
 %clear
-%load '...\sub_Raw.mat'
+%load '...\subjectgroup_preprocess\Results_subjectgroup\subjectgroup_Raw.mat'
 %%
 %Offset measure
 %%
@@ -66,7 +84,7 @@ for i = 1:length(Folder) %For as many folders
 end
 %%
 %Save all subjects events
-save '...\sub_Events.mat' 'Events'
+save '...\subjectgroup_preprocess\Results_subjectgroup\subjectgroup_Events.mat' 'Events'
 %%
 Idx_Segmentation = {}; %Create an Idx_Segmentation cell array
 for i = 1:length(Events) %For ar many subjects
@@ -117,17 +135,17 @@ for i = 1:length(Events) %For ar many subjects
     save(File_path, 'Index_Segmentation');
 end
 %%
-save '...\sub_Idx_Segmentation.mat' 'Idx_Segmentation'
+save '...\subjectgroup_preprocess\Results_subjectgroup\subjectgroup_Idx_Segmentation.mat' 'Idx_Segmentation'
 %%
-Segmentation = {}; %Create a cell array
-for i = 1 : length(Idx_Segmentation) %for as many subjects
-    Matrix = []; %create a matrix
-    for ii = 1:length(Idx_Segmentation{2,i}) %For as many events
-        Segment = Raw_data{2,i}(:,Idx_Segmentation{2,i}{1,ii}); %Extract the segment from the raw data
-        Matrix{1,ii} =  Segment; %Strore the segment in the matrix
+Segmentation = {};
+for i = 1 : length(Idx_Segmentation)
+    Matrix = [];
+    for ii = 1:length(Idx_Segmentation{2,i})
+        Segment = Raw_data{2,i}(:,Idx_Segmentation{2,i}{1,ii});
+        Matrix{1,ii} =  Segment;
     end
-    Segmentation{2,i} = Matrix; %Save the matrix for each subject
-    Segmentation{2,i}{1,1} = reshape(Segmentation{2,i}{1,1}, 129, 1000, []); %rechape the segment to get 129 lectrodes, 1000 time series, X segments
+    Segmentation{2,i} = Matrix;
+    Segmentation{2,i}{1,1} = reshape(Segmentation{2,i}{1,1}, 129, 1000, []);
     Segmentation{2,i}{1,2} = reshape(Segmentation{2,i}{1,2}, 129, 1000, []);
     Segmentation{2,i}{1,3} = reshape(Segmentation{2,i}{1,3}, 129, 1000, []);
     Segmentation{2,i}{1,4} = reshape(Segmentation{2,i}{1,4}, 129, 4700, []);
@@ -142,12 +160,12 @@ for i = 1 : length(Idx_Segmentation) %for as many subjects
     save(File_path, 'Epochs');
 end
 %%
-save('...\sub_Segmentation.mat', 'Segmentation', '-v7.3')
+save('...\subjectgroup_preprocess\Results_subjectgroup\subjectgroup_Segmentation.mat', 'Segmentation', '-v7.3')
 %%
 %ARTIFACT DETECTION
 %%
 %clear
-%load '...\sub_Segmentation.mat'
+%load '...\subjectgroup_preprocess\Results_subjectgroup\subjectgroup_Segmentation.mat'
 %%
 Log_cell = {}; 
 Log_info = {};
@@ -218,10 +236,10 @@ for i = 1:length(Folder) %For as many participants
     save(File_path, 'AD_Log');
 end
 %%
-save '...\sub_Log.mat' 'AD'
+save '...\subjectgroup_preprocess\Results_subjectgroup\subjectgroup_Log.mat' 'AD'
 %%
 %clear
-%load '...\sub_Log.mat'
+%load '...\subjectgroup_preprocess\Results_subjectgroup\subjectgroup_Log.mat'
 %%
 Artifact_Free = {};
 for i = 1:length(AD) %For as many subjects
@@ -234,7 +252,7 @@ for i = 1:length(AD) %For as many subjects
             if isa(Good_Segment_Nb,'char') == 1
                 Good_Segment_Nb = str2num(Good_Segment_Nb);
             end
-            Good_Segment = Segmentation{2,i}{1,ii}(:,:,Good_Segment_Nb); %Keep only good segment
+            Good_Segment = Segmentation{2,i}{1,ii}(:,:,Good_Segment_Nb);
             Matrix = cat(3, Matrix, Good_Segment);
         end
          Artifact_Free{2,i}{1,ii} = Matrix;
@@ -247,7 +265,7 @@ for i = 1:length(AD) %For as many subjects
     save(File_path, 'ArtifactDetection');
 end
 %%
-save('...\sub_AD.mat', 'Artifact_Free', '-v7.3')
+save('...\subjectgroup_preprocess\Results_subjectgroup\subjectgroup_AD.mat', 'Artifact_Free', '-v7.3')
 %%
 %REREFERENCING to scalp average
 %Re-referencing is achieved by creating an average of all scalp
@@ -280,56 +298,54 @@ for i = 1:length(AD) %for as many children
     save(File_path, 'ReferencedData');
 end
 %%
-save('...\sub_Rereferenced.mat', 'Rereferenced', '-v7.3')
+save('...\subjectgroup_preprocess\Results_subjectgroup\subjectgroup_Rereferenced.mat', 'Rereferenced', '-v7.3')
 %%
 %clear
-%load '...\sub_Rereferenced.mat'
+%load '...\subjectgroup_preprocess\Results_subjectgroup\subjectgroup_Rereferenced.mat'
 %%
 %BASELINE CORRECTION
 %%
 Corrected = {};
-for i = 1:length(Rereferenced)%For as many subjects
+for i = 1:length(Rereferenced)
     str = append(Folder(i).name,'_Corrected.mat'); %Get the file name
-    File_path = fullfile(Folder(i).folder,Folder(i).name,str);%Get the file path
-    for ii = 1:length(Rereferenced{2,i})%For as many conditions
-       Matrix = [];%Create a matrix
-        for iii = 1:size(Rereferenced{2,i}{1,ii},3) %For as many segment in condition ii
-                   if size(Rereferenced{2,i}{1,ii},2) == 4700 %If the segment is an omission
-                       Baseline = mean(Rereferenced{2,i}{1,ii}(:,899:999,iii),2);%Get baseline just before the omission
-                       Epoch_corrected = Rereferenced{2,i}{1,ii}(:,:,iii) - Baseline; %Correct the segment
-                       Matrix = cat(3, Matrix, Epoch_corrected);%Put segment in matrix
-                   else 
-                       Baseline = mean(Rereferenced{2,i}{1,ii}(:,1:99,iii),2);%Get the baseline
-                       Epoch_corrected = Rereferenced{2,i}{1,ii}(:,:,iii) - Baseline; %correct the segment
-                       Matrix = cat(3, Matrix, Epoch_corrected);%Put segment in matrix
+    File_path = fullfile(Folder(i).folder,Folder(i).name,str);
+    for ii = 1:length(Rereferenced{2,i})
+       Matrix = [];
+        for iii = 1:size(Rereferenced{2,i}{1,ii},3)
+                   if size(Rereferenced{2,i}{1,ii},2) == 4700
+                       Baseline = mean(Rereferenced{2,i}{1,ii}(:,899:999,iii),2);
+                       Epoch_corrected = Rereferenced{2,i}{1,ii}(:,:,iii) - Baseline;
+                       Matrix = cat(3, Matrix, Epoch_corrected);
+                   else
+                       Baseline = mean(Rereferenced{2,i}{1,ii}(:,1:99,iii),2);
+                       Epoch_corrected = Rereferenced{2,i}{1,ii}(:,:,iii) - Baseline;
+                       Matrix = cat(3, Matrix, Epoch_corrected);
                    end
         end
         Corrected{2,i}{1,ii} = Matrix; %Save Matrix in cell array
         Corrected{1,i} = Folder(i).name;
     end
-    %Save individually
     Corrected_data = Corrected{2,i};
     save(File_path, 'Corrected_data')
 end
 %%
-save('...\sub_Baseline_Corrected.mat', 'Corrected', '-v7.3')
+save('...\subjectgroup_preprocess\Results_subjectgroup\subjectgroup_Baseline_Corrected.mat', 'Corrected', '-v7.3')
 %%
 %number of epochs
 %%
-NumberEpochs = {}; %Create a cell array
-for i =1:length(Corrected) %For as many subjects
-    for ii = 1:length(Corrected{2,i})%For as many conditions
-        Size = size(Corrected{2,i}{1,ii},3);%Get the number of epoch for condition ii
-        NumberEpochs{2,i}{1,ii} = Size;%Put the save in celle array
+NumberEpochs = {};
+for i =1:length(Corrected)
+    for ii = 1:length(Corrected{2,i})
+        Size = size(Corrected{2,i}{1,ii},3);
+        NumberEpochs{2,i}{1,ii} = Size;
     end
-    %save individually
     NumberEpochs{1,i} = Folder(i).name;
     Nb_Epochs = NumberEpochs{2,i};
     str = append(Folder(i).name,'_NbEpochs.mat'); 
     File_path = fullfile(Folder(i).folder,Folder(i).name,str);
     save(File_path, 'Nb_Epochs');
 end
-%Make the total of all subject
+
 TotalEpochs = {};
 TotalCon = 0;
 TotalDev = 0;
@@ -348,36 +364,16 @@ for i = 1:length(NumberEpochs)
     TotalMoy = TotalMoy + NumberEpochs{2,i}{1,7};
 end
 %%
-save '...\sub_Total_Epochs.mat' ...
+save '...\subjectgroup_preprocess\Results_subjectgroup\F_subjectgroupotal_Epochs.mat' ...
     TotalCon TotalDev TotalFam TotalOmi TotalPOm TotalStd TotalMoy 
 %%
 disp('Preprocessed with success')
 %%
 clearvars -except Corrected Folder
 %%
-%MEAN EPOCHS
+%Invert data from participant with left stimulation
 %%
-sub_2D = {}; %Create a celle array
-for i =1:length(Corrected) %For as many subjects
-    for ii = 1:length(Corrected{2,i}) %for as many conditions
-        Epoch_mean = mean(Corrected{2,i}{1,ii},3); %mean epochs to get 129electrodes*1000timeseries
-        sub_2D{2,i}{1,ii} = Epoch_mean;%Save condition
-    end
-    %save for all and individually
-    sub_2D{1,i} = Folder(i).name;
-    Data2D = sub_2D{2,i};
-    str = append(Folder(i).name,'_2D_Data.mat'); 
-    File_path = fullfile(Folder(i).folder,Folder(i).name,str);
-    save(File_path, 'Data2D');
-end
-%%
-subj_name = sub_2D(1,:)'; %get subjects name
-%%
-save '...\sub_2D.mat' sub_2D
-%%
-%ARM STIMULATED
-%%
-Arm_stimulated = {};
+Reversed_data = Corrected;
 
 %load the excel sheet containing the arm stimulated
 str = append('ArmStimulated.xlsx');
@@ -385,122 +381,159 @@ File_path = fullfile(Folder(1).folder,str);
 %Table to cell array
 Arm = readcell(File_path);
 %
+reverse_electrode = readcell('...\reverse_electrode.xlsx');
 
-for i = 1:length(Folder) %Get the electrodes corresponding to the stimulated arm
-    for ii = 1:length(Arm)
-        if strcmp(Folder(i).name,Arm(1,ii))
-            Arm_stimulated{2,i} = cell2mat(Arm(2,ii));
-            Arm_stimulated{4,i} = [5, 6, 7, 12, 13, 106, 112];
-            if Arm_stimulated{2,i} == 1
-               Arm_stimulated{3,i} = [28, 29, 35, 36, 41, 42, 47];
-            else
-               Arm_stimulated{3,i} = [93, 98, 103, 104, 110, 111, 117];
+matrix = [];
+
+
+for i = 1:length(Folder) %for as many participants
+    for ii = 1:length(Arm) %for as many arm stimulated
+        if strcmp(Folder(i).name,Arm(1,ii)) %if subject code matches
+            if Arm{2,ii} == 2 %if arm stimulated is left
+                for j = 1:length(Reversed_data{2,i}) %for as many condition
+                    matrix  = Reversed_data{2,i}{1,j}; %extract the data
+                    inverted_matrix = [];
+                    for k = 1:length(reverse_electrode) %for as many electrodes
+                        inverted_matrix(reverse_electrode{k,2},:,:) = matrix(reverse_electrode{k,1},:,:); %reverse data
+                    end
+                    Reversed_data{2,i}{1,j} = inverted_matrix;
+                end
             end
         end
-    end
-    %Some particpants need additional electrode removal
-    %e.g. if participant 24 needs electrode 36 removed from analysis
-%     if i == 24
-%        Arm_stimulated{3,i} =  [28, 29, 35, 41, 42, 47];
-%     end
-%Save
-    Arm_stimulated{1,i} = Folder(i).name;
-    ArmElectrodes = Arm_stimulated(:,i);
-    str = append(Folder(i).name,'_Arm.mat'); 
+    end         
+    Reverse = Reversed_data(:,i);
+    str = append(Folder(i).name,'_Reverse.mat'); 
     File_path = fullfile(Folder(i).folder,Folder(i).name,str);
-    save(File_path, 'ArmElectrodes');
+    save(File_path, 'Reverse');
 end
+save '...\subjectgroup_preprocess\Results_subjectgroup\subjectgroup_Reverse.mat' 'Reversed_data'
 %%
-save '...\sub_Arm.mat' Arm_stimulated
+%MEAN EPOCHS
+%%
+subjectgroup_2D = {};
+for i =1:length(Reversed_data)
+    for ii = 1:length(Reversed_data{2,i})
+        Epoch_mean = mean(Reversed_data{2,i}{1,ii},3);
+        subjectgroup_2D{2,i}{1,ii} = Epoch_mean;
+    end
+    subjectgroup_2D{1,i} = Folder(i).name;
+    Data2D = subjectgroup_2D{2,i};
+    str = append(Folder(i).name,'_2D_Data.mat'); 
+    File_path = fullfile(Folder(i).folder,Folder(i).name,str);
+    save(File_path, 'Data2D');
+end
+
+subj_name = subjectgroup_2D(1,:)';
+%%
+save '...\subjectgroup_preprocess\Results_subjectgroup\subjectgroup_2D.mat' subjectgroup_2D
 %%
 %SINGLE AD
 %%
-for i = 1:length(Corrected) %For as many subjects
-    Hand_AD = {};%Create a cell array
-    for ii = 1:length(Corrected{2,i})%For as many conditions
-        Somato = Corrected{2,i}{1,ii}(Arm_stimulated{3,i},:,:);%Keep only electrodes for somatosensory analysis
-        Frontal = Corrected{2,i}{1,ii}(Arm_stimulated{4,i},:,:);%Same for frontal analysis
+for i = 1:length(Reversed_data)
+    Hand_AD = {};
+    for ii = 1:length(Reversed_data{2,i})
+        Somato = Reversed_data{2,i}{1,ii}([29,29,35,36,41,42,47,52],:,:);
+        Frontal = Reversed_data{2,i}{1,ii}([5,6,7,12,13,106,112,129],:,:);
         Hand_AD{1,ii} = Somato;
         Hand_AD{2,ii} = Frontal;
     end
-    %Save individually
     str = append(Folder(i).name,'_HandAD.mat'); 
     File_path = fullfile(Folder(i).folder,Folder(i).name,str);
     save(File_path, 'Hand_AD');
 end
 %%
-%Get data per condition
+%129*1000*nb_of_subjects
 %%
-%Create condition matrices
-sub_Fam = [];
-sub_Con = [];
-sub_Omi = [];
-sub_POm = [];
-sub_Std = [];
-sub_Moy = [];
-sub_Dev = [];
+subjectgroup_Fam = [];
+subjectgroup_Con = [];
+subjectgroup_Omi = [];
+subjectgroup_POm = [];
+subjectgroup_Std = [];
+subjectgroup_Moy = [];
+subjectgroup_Dev = [];
 
-for i = 1 :length(sub_2D) %For as many subjects
-        sub_Con = cat(3, sub_Con, sub_2D{2,i}{1,1}); %Get all "Control' condition in one matrix, repeat for each condition
-        sub_Dev = cat(3, sub_Dev, sub_2D{2,i}{1,2});
-        sub_Fam = cat(3,sub_Fam, sub_2D{2,i}{1,3});
-        sub_Omi = cat(3, sub_Omi, sub_2D{2,i}{1,4});
-        sub_POm = cat(3, sub_POm, sub_2D{2,i}{1,5});
-        sub_Std = cat(3,sub_Std, sub_2D{2,i}{1,6});
-        sub_Moy = cat(3,sub_Moy, sub_2D{2,i}{1,7});
+for i = 1 :length(subjectgroup_2D)
+        subjectgroup_Con = cat(3, subjectgroup_Con, subjectgroup_2D{2,i}{1,1});
+        subjectgroup_Dev = cat(3, subjectgroup_Dev, subjectgroup_2D{2,i}{1,2});
+        subjectgroup_Fam = cat(3,subjectgroup_Fam, subjectgroup_2D{2,i}{1,3});
+        subjectgroup_Omi = cat(3, subjectgroup_Omi, subjectgroup_2D{2,i}{1,4});
+        subjectgroup_POm = cat(3, subjectgroup_POm, subjectgroup_2D{2,i}{1,5});
+        subjectgroup_Std = cat(3,subjectgroup_Std, subjectgroup_2D{2,i}{1,6});
+        subjectgroup_Moy = cat(3,subjectgroup_Moy, subjectgroup_2D{2,i}{1,7});
 end
 
 Conditions_AllElectrodes = {};
-Conditions_AllElectrodes{1,1} = sub_Con;
-Conditions_AllElectrodes{1,2} = sub_Dev;
-Conditions_AllElectrodes{1,3} = sub_Fam;
-Conditions_AllElectrodes{1,4} = sub_Omi;
-Conditions_AllElectrodes{1,5} = sub_POm;
-Conditions_AllElectrodes{1,6} = sub_Std;
-Conditions_AllElectrodes{1,7} = sub_Moy;
+Conditions_AllElectrodes{1,1} = subjectgroup_Con;
+Conditions_AllElectrodes{1,2} = subjectgroup_Dev;
+Conditions_AllElectrodes{1,3} = subjectgroup_Fam;
+Conditions_AllElectrodes{1,4} = subjectgroup_Omi;
+Conditions_AllElectrodes{1,5} = subjectgroup_POm;
+Conditions_AllElectrodes{1,6} = subjectgroup_Std;
+Conditions_AllElectrodes{1,7} = subjectgroup_Moy;
 %%
-save '...\sub_Conditions_AllElectrodes.mat' Conditions_AllElectrodes
+%Get behavioral data
 %%
-Conditions_Stats_sub = {};%Create a cell array
-for i = 1:length(Conditions_AllElectrodes) %For as many conditions
-    for ii = 1:size(Arm_stimulated,2) %For as many subjects
-        Somato = permute(mean(Conditions_AllElectrodes{1,i}(Arm_stimulated{3,ii},:,:),1),[3,2,1]); %mean somato electrodes
-        Frtl = permute(mean(Conditions_AllElectrodes{1,i}(Arm_stimulated{4,ii},:,:),1),[3,2,1]);%mean frontal electrode
-        Conditions_Stats_sub{1,i} = Somato; %X subjects*1000 time series
-        Conditions_Stats_sub{2,i} = Frtl;
+Behavioral_data = readtable('...\Tests_psycho_CR.xlsx');
+PsychoEval = [];
+
+for ii = 1:length(subj_name)
+    for i = 1:size(Behavioral_data,1)
+        if strcmp(Behavioral_data{i,1},subj_name(ii,1)) == 1
+            PsychoEval = [PsychoEval; Behavioral_data(i,:)];
+        end
     end
+end
+
+if strcmp(PsychoEval{1,1},subj_name(1,1)) == 1
+    Conditions_AllElectrodes{1,8} = PsychoEval;
+else
+    disp('Problem with subject order, behavioral row doesnt match EEG row')
+    return
+end
+%%
+save '...\subjectgroup_preprocess\Results_subjectgroup\PsychoEval_FP.mat' 'PsychoEval'
+save '...\subjectgroup_preprocess\Results_subjectgroup\subjectgroup_Conditions_AllElectrodes.mat' Conditions_AllElectrodes
+%%
+Conditions_Stats_subjectgroup = {};
+for i = 1:length(Conditions_AllElectrodes)-1
+        Somato = permute(mean(Conditions_AllElectrodes{1,i}([28,29,35,36,41,42,47,52],:,:),1),[3,2,1]);
+        Frtl = permute(mean(Conditions_AllElectrodes{1,i}([5,6,7,12,13,106,112,129],:,:),1),[3,2,1]);
+        Conditions_Stats_subjectgroup{1,i} = Somato;
+        Conditions_Stats_subjectgroup{2,i} = Frtl;
 end 
 
-Conditions_Stats_sub{1,8} = 'Somato';
-Conditions_Stats_sub{2,8} = 'Frtl';
-Conditions_Stats_sub{3,1} = 'Control';
-Conditions_Stats_sub{3,2} = 'Deviant';
-Conditions_Stats_sub{3,3} = 'Familiarization';
-Conditions_Stats_sub{3,4} = 'Omission';
-Conditions_Stats_sub{3,5} = 'PostOm';
-Conditions_Stats_sub{3,6} = 'Standard';
-Conditions_Stats_sub{3,7} = 'StimMoy';
+Conditions_Stats_subjectgroup{1,8} = 'Somato';
+Conditions_Stats_subjectgroup{2,8} = 'Frtl';
+Conditions_Stats_subjectgroup{3,1} = 'Control';
+Conditions_Stats_subjectgroup{3,2} = 'Deviant';
+Conditions_Stats_subjectgroup{3,3} = 'Familiarization';
+Conditions_Stats_subjectgroup{3,4} = 'Omission';
+Conditions_Stats_subjectgroup{3,5} = 'PostOm';
+Conditions_Stats_subjectgroup{3,6} = 'Standard';
+Conditions_Stats_subjectgroup{3,7} = 'StimMoy';
+Conditions_Stats_subjectgroup{3,8} = PsychoEval;
 %%
-save '...\sub_Conditions_Stats.mat' Conditions_Stats_sub
+save '...\subjectgroup_preprocess\Results_subjectgroup\subjectgroup_Conditions_Stats.mat' Conditions_Stats_subjectgroup
+save '...\All_Results\subjectgroup_Conditions_Stats.mat' Conditions_Stats_subjectgroup
 %%
-Conditions_Visu_sub = {};%create a cell array
-for i = 1:length(Conditions_Stats_sub) %for as many conditions
-    Somato = mean(Conditions_Stats_sub{1,i},1);%mean subjects
-    Frtl = mean(Conditions_Stats_sub{2,i},1);
-    Conditions_Visu_sub{1,i} = Somato;%1000 time series vector
-    Conditions_Visu_sub{2,i} = Frtl;
+Conditions_Visu_subjectgroup = {};
+for i = 1:length(Conditions_Stats_subjectgroup)
+    Somato = mean(Conditions_Stats_subjectgroup{1,i},1);
+    Frtl = mean(Conditions_Stats_subjectgroup{2,i},1);
+    Conditions_Visu_subjectgroup{1,i} = Somato;
+    Conditions_Visu_subjectgroup{2,i} = Frtl;
 end 
-Conditions_Visu_sub{1,8} = 'Somato';
-Conditions_Visu_sub{2,8} = 'Frtl';
-Conditions_Visu_sub{3,1} = 'Control';
-Conditions_Visu_sub{3,2} = 'Deviant';
-Conditions_Visu_sub{3,3} = 'Familiarization';
-Conditions_Visu_sub{3,4} = 'Omission';
-Conditions_Visu_sub{3,5} = 'PostOm';
-Conditions_Visu_sub{3,6} = 'Standard';
-Conditions_Visu_sub{3,7} = 'StimMoy';
+Conditions_Visu_subjectgroup{1,8} = 'Somato';
+Conditions_Visu_subjectgroup{2,8} = 'Frtl';
+Conditions_Visu_subjectgroup{3,1} = 'Control';
+Conditions_Visu_subjectgroup{3,2} = 'Deviant';
+Conditions_Visu_subjectgroup{3,3} = 'Familiarization';
+Conditions_Visu_subjectgroup{3,4} = 'Omission';
+Conditions_Visu_subjectgroup{3,5} = 'PostOm';
+Conditions_Visu_subjectgroup{3,6} = 'Standard';
+Conditions_Visu_subjectgroup{3,7} = 'StimMoy';
 %%
-save '...\sub_Conditions_Visu.mat' Conditions_Visu_sub
+save '...\subjectgroup_preprocess\Results_subjectgroup\subjectgroup_Conditions_Visu.mat' Conditions_Visu_subjectgroup
 %%
 disp('Visu done with sucess')
-clearvars -except Conditions_Visu_sub Conditions_Stats_sub
+clearvars -except Conditions_Visu_subjectgroup Conditions_Stats_subjectgroup
